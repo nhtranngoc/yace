@@ -40,9 +40,11 @@ int main(int argc, char **argv) {
 	printMem(s);
 
 	// Init emulator
-	while(1) {
+	// while(1) {
+	for(int i = 0; i < 10; i++) {
 		EmulateChip8(s);
 		s->PC+=2;
+		printMem(s);
 	}
 
 	return 0;
@@ -86,7 +88,7 @@ void EmulateChip8(Chip8State *s) {
 		case 0x01:
 			printf("%-10s #%03x", "JP", nnn); 
 			s->PC = nnn;
-			break
+			break;
 		case 0x02:
 			printf("%-10s #%03x", "CALL", nnn); 
 			s->memory[s->SP] = s->PC;
@@ -94,30 +96,44 @@ void EmulateChip8(Chip8State *s) {
 			s->PC = nnn;
 			break;
 		case 0x03:
-			printf("%-10s V%01x, #$%02x", "SE", x, nn); break;
+			printf("%-10s V%01x, #$%02x", "SE", x, nn); 
 			if(s->V[x] == nn) {
 				s->PC+=2;
 			}
+			break;
 		case 0x04:
-			printf("%-10s V%01x, #$%02x", "SNE", x, nn); break;
-			if(V[x] != nn) {
+			printf("%-10s V%01x, #$%02x", "SNE", x, nn); 
+			if(s->V[x] != nn) {
 				s->PC+=2;
 			}
+			break;
 		case 0x05:
-			printf("%-10s V%01x, V%01x", "SE", x, y); 	
+			printf("%-10s V%01x, V%01x", "SE", x, y); 
+			if(s->V[x] == s->V[y]) {
+				s->PC+=2;
+			}
 			break;
 		case 0x06:
-			printf("%-10s V%01x, #$%02x", "LD", x, nn); break;
+			printf("%-10s V%01x, #$%02x", "LD", x, nn); 
+			s->V[x] = nn;
+			break;
 		case 0x07:
-			printf("%-10s V%01x, #$%02x", "ADD", x, nn); break;
+			printf("%-10s V%01x, #$%02x", "ADD", x, nn); 
+			s->V[x] +=nn;
+			break;
 		case 0x08:
 			switch(lastnib) {
 				case 0x00:
-					printf("%-10s V%01x, V%01x", "LD", x, y); break;
+					printf("%-10s V%01x, V%01x", "LD", x, y); 
+					s->V[x] = s->V[y];
+					break;
 				case 0x01:
-					printf("%-10s V%01x, V%01x", "OR", x, y); break;
+					printf("%-10s V%01x, V%01x", "OR", x, y); 
+					s->V[x] ^= s->V[y];
+					break;
 				case 0x02:
-					printf("%-10s V%01x, V%01x", "AND", x, y); break;
+					printf("%-10s V%01x, V%01x", "AND", x, y); 
+					break;
 				case 0x03:
 					printf("%-10s V%01x, V%01x", "XOR", x, y); break;
 				case 0x04:
@@ -189,16 +205,30 @@ void EmulateChip8(Chip8State *s) {
 // Print memory nicely.
 void printMem(Chip8State *s) {
 	for(int i = 0; i < 4096; i++) {
+
 		if(i % 16 == 0) {
 			puts("");
 			printf("%04x\t", i);
 		}
 
-		printf("%02X ", s->memory[i]);
+		printf("%02X", s->memory[i]);
+		if(s->PC == i) {
+			printf("*");
+		} else printf(" ");
 
 		if(i == 0x1FF) {
 			puts("");
 		}
 	}
+	puts("");
+
+	printf("I: %02x\n", s->I);
+	for(int i = 0; i < 16; i++) {
+		printf("V%-2d: %02x\t", i, s->V[i]);
+		if(i % 2 == 1 && i > 0) {
+			puts("");
+		}
+	}
+
 	puts("");
 }
