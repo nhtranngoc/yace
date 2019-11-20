@@ -2,6 +2,15 @@
 
 My take on the ubiquitous CHIP-8 emulator in C as both an exercise in C and learning about emulators.
 
+# Build instructions
+```
+cd ./buid/
+cmake
+make 
+make run
+```
+
+The code should run the Tetris ROM in ./roms/
 
 ## References
 

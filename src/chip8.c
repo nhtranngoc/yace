@@ -1,55 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <time.h>
+#include "chip8.h"
 
 char STOP = 0;
 int icount = 0;
-
-typedef struct Chip8State {
-	uint8_t V[16];
-	uint16_t I;
-	uint8_t Delay;
-	uint8_t Sound;
-	uint16_t PC;
-	uint16_t SP;
-
-	uint8_t *memory;
-	uint8_t *screen;
-} Chip8State;
-
-
-Chip8State *InitChip8(void);
-void EmulateChip8(Chip8State *s);
-void printMem(Chip8State *s, int printFull);
-
-int main(int argc, char **argv) {
-	// Load program
-	FILE *f = fopen(argv[1], "rb");
-
-	if(f == NULL) {
-		printf("Error: Can't open file or file not found: %s\n", argv[1]);
-		exit(1);
-	}
-
-	// Copy program into memory
-	fseek(f, 0L, SEEK_END);
-	int fsize = ftell(f);
-	fseek(f, 0L, SEEK_SET);
-
-	Chip8State *s = InitChip8();
-	fread(s->memory+s->PC, fsize, 1, f);
-	fclose(f); 
-
-	// Init emulator
-	while(!STOP) {
-		EmulateChip8(s);
-		s->PC+=2;
-		printMem(s, 0);
-	}
-
-	return 0;
-}
 
 Chip8State *InitChip8(void) {
 	Chip8State *s = calloc(sizeof(Chip8State), 1);
