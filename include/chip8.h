@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <time.h>
+#include "SDL2/SDL.h"
 
 extern char STOP;
 extern int icount;
