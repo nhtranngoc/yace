@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <time.h>
+
+char STOP = 0;
+int icount = 0;
 
 typedef struct Chip8State {
 	uint8_t V[16];
@@ -17,7 +21,7 @@ typedef struct Chip8State {
 
 Chip8State *InitChip8(void);
 void EmulateChip8(Chip8State *s);
-void printMem(Chip8State *s);
+void printMem(Chip8State *s, int printFull);
 
 int main(int argc, char **argv) {
 	// Load program
@@ -37,14 +41,11 @@ int main(int argc, char **argv) {
 	fread(s->memory+s->PC, fsize, 1, f);
 	fclose(f); 
 
-	printMem(s);
-
 	// Init emulator
-	// while(1) {
-	for(int i = 0; i < 10; i++) {
+	while(!STOP) {
 		EmulateChip8(s);
 		s->PC+=2;
-		printMem(s);
+		printMem(s, 0);
 	}
 
 	return 0;
@@ -79,8 +80,11 @@ void EmulateChip8(Chip8State *s) {
 				case 0x00E0:
 				printf("%-10s", "CLS"); break;
 				case 0x00EE:
-				printf("%-10s", "RET"); break;
+				printf("%-10s", "RET"); 
+				s->PC = (s->memory[s->SP] << 8) | (s->memory[s->SP+1]);
+				break;
 				default:
+				STOP = 1; // When it get to this it basically crashes.
 				printf("%-10s #$%03x", "SYS", nnn); 
 				break;
 			}
@@ -91,27 +95,20 @@ void EmulateChip8(Chip8State *s) {
 			break;
 		case 0x02:
 			printf("%-10s #%03x", "CALL", nnn); 
-			s->memory[s->SP] = s->PC;
-			s->SP++;
+			s->memory[s->SP++] = s->PC;
 			s->PC = nnn;
 			break;
 		case 0x03:
 			printf("%-10s V%01x, #$%02x", "SE", x, nn); 
-			if(s->V[x] == nn) {
-				s->PC+=2;
-			}
+			s->PC += (s->V[x] == nn) ? 2 : 0;
 			break;
 		case 0x04:
 			printf("%-10s V%01x, #$%02x", "SNE", x, nn); 
-			if(s->V[x] != nn) {
-				s->PC+=2;
-			}
+			s->PC += (s->V[x] != nn) ? 2 : 0;
 			break;
 		case 0x05:
 			printf("%-10s V%01x, V%01x", "SE", x, y); 
-			if(s->V[x] == s->V[y]) {
-				s->PC+=2;
-			}
+			s->PC += (s->V[x] == s->V[y]) ? 2 : 0;
 			break;
 		case 0x06:
 			printf("%-10s V%01x, #$%02x", "LD", x, nn); 
@@ -129,39 +126,68 @@ void EmulateChip8(Chip8State *s) {
 					break;
 				case 0x01:
 					printf("%-10s V%01x, V%01x", "OR", x, y); 
-					s->V[x] ^= s->V[y];
+					s->V[x] |= s->V[y];
 					break;
 				case 0x02:
 					printf("%-10s V%01x, V%01x", "AND", x, y); 
+					s->V[x] &= s->V[y];
 					break;
 				case 0x03:
-					printf("%-10s V%01x, V%01x", "XOR", x, y); break;
+					printf("%-10s V%01x, V%01x", "XOR", x, y); 
+					s->V[x] ^= s->V[y];
+					break;
 				case 0x04:
-					printf("%-10s V%01x, V%01x", "ADD", x, y); break;
+					printf("%-10s V%01x, V%01x", "ADD", x, y); 
+					uint16_t sum = s->V[x] + s->V[y];
+					s->V[0xf] = (sum > 255) ? 1 : 0;
+					s->V[x] = sum & 0xff;
+					break;
 				case 0x05:
-					printf("%-10s V%01x, V%01x", "SUB", x, y); break;
+					printf("%-10s V%01x, V%01x", "SUB", x, y); 
+					s->V[0xf] = (s->V[x] > s->V[y]) ? 1 : 0;
+					s->V[x] -= s->V[y];
+					break;
 				case 0x06:
-					printf("%-10s V%01x{, V%01x}", "SHR", x, y); break;
+					printf("%-10s V%01x{, V%01x}", "SHR", x, y); 
+					s->V[0xf] = (s->V[x] & 1) ? 1 : 0;
+					s->V[x] /= 2;
+					break;
 				case 0x07:
-					printf("%-10s V%01x, V%01x", "SUBN", x, y); break;
+					printf("%-10s V%01x, V%01x", "SUBN", x, y); 
+					s->V[0xf] = (s->V[y] > s->V[x]) ? 1 : 0;
+					s->V[y] -= s->V[x];
+					break;
 				case 0x0e:
-					printf("%-10s V%01x{, V%01x}", "SHL", x, y); break;
+					printf("%-10s V%01x{, V%01x}", "SHL", x, y); 
+					s->V[0xf] = (s->V[x] & (1 << 8)) ? 1 : 0;
+					s->V[x] *= 2;
+					break;
 				default:
 					printf("Invalid instruction 8");
 			}
 			break;
 		case 0x09:
-			printf("%-10s V%01x, V%01x", "SNE", x, y); break;
+			printf("%-10s V%01x, V%01x", "SNE", x, y);
+			s->PC += (s->V[x] != s->V[x]) ? 2 : 0;
+			break;
 		case 0x0a:
 			printf("%-10s %s, #$%03x", "LD", "I", nnn); 
 			s->I = nnn;
 			break;
 		case 0x0b:
-			printf("%-10s %s, #%03x", "JP", "V0", nnn); break;
+			printf("%-10s %s, #%03x", "JP", "V0", nnn); 
+			s->PC = nnn + s->V[0x0];
+			break;
 		case 0x0c:
-			printf("%-10s V%01x, #$%02x", "RND", x, nn); break;			
+			printf("%-10s V%01x, #$%02x", "RND", x, nn); 
+			srand(time(0));
+			uint8_t rng = (rand() % 256);
+			s->V[x] = rng & nn;			
+			break;			
 		case 0x0d:
-			printf("%-10s V%01x, V%01x, #$%01x", "DRW", x, y, n); break;
+			printf("%-10s V%01x, V%01x, #$%01x", "DRW", x, y, n); 
+			//Draw
+			break;
 		case 0x0e:
 			switch(opcode[1]) {
 				case 0x9E:
@@ -175,23 +201,44 @@ void EmulateChip8(Chip8State *s) {
 		case 0x0f:
 			switch(opcode[1]) {
 				case 0x07:
-					printf("%-10s V%01x, %s", "LD", x, "DT"); break;
+					printf("%-10s V%01x, %s", "LD", x, "DT"); 
+					s->V[x] = s->Delay;
+					break;
 				case 0x0A:
 					printf("%-10s V%01x, %s", "LD", x, "K"); break;
 				case 0x15:
-					printf("%-10s %s, V%01x", "LD", "DT", x); break;
+					printf("%-10s %s, V%01x", "LD", "DT", x); 
+					s->Delay = s->V[x];
+					break;
 				case 0x18:
-					printf("%-10s %s, V%01x", "LD", "ST", x); break;
+					printf("%-10s %s, V%01x", "LD", "ST", x); 
+					s->Sound = s->V[x];
+					break;
 				case 0x1E:
-					printf("%-10s %s, V%01x", "ADD", "I", x); break;
+					printf("%-10s %s, V%01x", "ADD", "I", x); 
+					s->I += s->V[x];
+					break;
 				case 0x29:
 					printf("%-10s %s, V%01x", "LD", "F", x); break;
 				case 0x33:
-					printf("%-10s %s, V%01x", "LD", "B", x); break;
+					printf("%-10s %s, V%01x", "LD", "B", x);
+					uint8_t bcd = s->V[x];
+					s->memory[s->I]   =  bcd / 100;
+					s->memory[s->I+1] = (bcd / 10) % 10;
+					s->memory[s->I+2] = (bcd % 100) % 10;
+					break;
 				case 0x55:
-					printf("%-10s %s, V%01x", "LD", "[I]", x); break;
+					printf("%-10s %s, V%01x", "LD", "[I]", x); 
+					for(int i = 0; i < x; i++) {
+						s->memory[s->I+i] = s->V[i];
+					}
+					break;
 				case 0x65:
-					printf("%-10s V%01x, %s", "LD", x, "[I]"); break;
+					printf("%-10s V%01x, %s", "LD", x, "[I]"); 
+					for(int i = 0; i < x; i++) {
+						s->V[i] = s->memory[s->I+i];
+					}
+					break;
 				default:
 					printf("Invalid instruction F");
 			}
@@ -200,12 +247,25 @@ void EmulateChip8(Chip8State *s) {
 			printf("Invalid instruction.");
 	}
 	printf("\n");
+	icount++;
 }
 
 // Print memory nicely.
-void printMem(Chip8State *s) {
-	for(int i = 0; i < 4096; i++) {
+void printMem(Chip8State *s, int printFull) {
+	printf("Instruction count: %d\n", icount);
+	printf("PC:  %04x\n", s->PC);
+	printf("I:   %02x\n", s->I);
+	for(int i = 0; i < 16; i++) {
+		printf("V%-2d: %02x\t", i, s->V[i]);
+		if(i % 2 == 1 && i > 0) {
+			puts("");
+		}
+	}
 
+	puts("");
+
+	if(!printFull) return;
+	for(int i = 0; i < 4096; i++) {
 		if(i % 16 == 0) {
 			puts("");
 			printf("%04x\t", i);
@@ -220,15 +280,5 @@ void printMem(Chip8State *s) {
 			puts("");
 		}
 	}
-	puts("");
-
-	printf("I: %02x\n", s->I);
-	for(int i = 0; i < 16; i++) {
-		printf("V%-2d: %02x\t", i, s->V[i]);
-		if(i % 2 == 1 && i > 0) {
-			puts("");
-		}
-	}
-
 	puts("");
 }
