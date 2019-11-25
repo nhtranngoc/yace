@@ -1,11 +1,11 @@
-#ifndef CHIP8_H
-#define CHIP8_H
+#ifndef CHIP8_H_
+#define CHIP8_H_
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <time.h>
-#include "SDL2/SDL.h"
 
 extern char STOP;
 extern int icount;
@@ -26,4 +26,4 @@ Chip8State *InitChip8(void);
 void EmulateChip8(Chip8State *s);
 void printMem(Chip8State *s, int printFull);
 
-#endif
+#endif // CHIP8_H_

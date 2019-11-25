@@ -7,7 +7,7 @@ include_directories(${SDL2_INDLUE_DIRS})
 # Directories 
 include_directories(../include)
 set(ROMS_DIR ${CMAKE_HOME_DIRECTORY}/roms)
-set(CHIP8_SOURCES main.c chip8.c)
+set(CHIP8_SOURCES main.c chip8.c display.c keyboard.c)
 
 # Executables
 add_executable(chip8 ${CHIP8_SOURCES})
@@ -16,5 +16,6 @@ add_executable(disassembler disassembler.c)
 
 # make run
 add_custom_target(run 
-	COMMAND chip8 ${ROMS_DIR}/Tetris\ [Fran\ Dachille,\ 1991].ch8
+	COMMAND chip8 ${ROMS_DIR}/IBM.ch8
+	# COMMAND chip8 ${ROMS_DIR}/Maze.ch8
 	)

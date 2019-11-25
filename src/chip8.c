@@ -2,6 +2,7 @@
 
 char STOP = 0;
 int icount = 0;
+char draw;
 
 Chip8State *InitChip8(void) {
 	Chip8State *s = calloc(sizeof(Chip8State), 1);
@@ -27,10 +28,12 @@ void EmulateChip8(Chip8State *s) {
 
 	printf("%04x %02x %02x ", s->PC, opcode[0], opcode[1]);
 	switch(firstnib) {
-		case 0x00:
+		case 0x00:	
 			switch(nnn) {
 				case 0x00E0:
 				printf("%-10s", "CLS"); 
+				memset(s->screen, 0, 64*32/8);
+				draw = 1;
 				s->PC += 2;
 				break;
 				case 0x00EE:
@@ -157,6 +160,46 @@ void EmulateChip8(Chip8State *s) {
 		case 0x0d:
 			printf("%-10s V%01x, V%01x, #$%01x", "DRW", x, y, n); 
 			//Draw
+			s->V[0xf] = 0;
+			puts("");
+			for(int i=0;i<n;i++) {
+				uint8_t src_byte = s->memory[s->I + i];
+				// Scanning from msb.
+				for(int j=0;j<8;j++) {
+					uint8_t src_bit = (src_byte >> (7-j)) & 0x1;
+					// Get x, y (2048)
+					int x_bit = s->V[x] + j;
+					int y_bit = s->V[y] + i;
+
+					// Get index (256)
+					int index_byte = x_bit/8 + y_bit*8;
+					uint8_t des_byte = s->screen[index_byte];
+					uint8_t des_bit = (des_byte >> (7-j)) & 0x1;
+
+					if(src_bit) {
+
+						if(src_bit & des_bit) {
+							s->V[0xf] = 1;
+						}
+						uint8_t xor_bit = src_bit ^ des_bit;
+						s->screen[index_byte] |= xor_bit << (s->V[x]+j)%8;
+						printf("Set bit src: %02x, x: %d, y: %d, i: %d, j: %d, b: %01x, bit: %02x\n", 
+							src_byte, 
+							x_bit, 
+							y_bit, 
+							index_byte, 
+							j,
+							xor_bit,
+							xor_bit << (s->V[x]+j)%8);
+
+					}
+
+				}
+			}
+			printf("==========");
+
+			puts("");
+			draw = 1;
 			s->PC += 2;
 			break;
 		case 0x0e:
@@ -224,6 +267,11 @@ void EmulateChip8(Chip8State *s) {
 		default:
 			printf("Invalid instruction.");
 	}
+
+	if(s->Delay > 0) {
+		s->Delay--;
+	}
+
 	printf("\n");
 	icount++;
 }
@@ -235,6 +283,8 @@ void printMem(Chip8State *s, int printFull) {
 	printf("STK: %04x\n", s->memory[s->SP]);
 	printf("PC:  %04x\n", s->PC);
 	printf("I:   %02x\n", s->I);
+	printf("DT:  %d\n"  , s->Delay);
+	printf("ST:  %d\n"  , s->Sound);
 	for(int i = 0; i < 16; i++) {
 		printf("V%-2d: %02x\t", i, s->V[i]);
 		if(i % 2 == 1 && i > 0) {
@@ -244,21 +294,43 @@ void printMem(Chip8State *s, int printFull) {
 
 	puts("");
 
-	if(!printFull) return;
-	for(int i = 0; i < 4096; i++) {
-		if(i % 16 == 0) {
-			puts("");
-			printf("%04x\t", i);
-		}
+	switch(printFull) {
+		case 1:
+		for(int i = 0; i < 4096; i++) {
+			if(i % 16 == 0) {
+				puts("");
+				printf("%04x\t", i);
+			}
 
-		printf("%02X", s->memory[i]);
-		if(s->PC == i) {
-			printf("*");
-		} else printf(" ");
+			printf("%02X", s->memory[i]);
+			if(s->PC == i) {
+				printf("*");
+			} else printf(" ");
+				if(i == 0x1FF) {
+				puts("");
+			}
+		}	
+		break;
+		case 2:
+		for(int i = 0; i < 256; i++) {
+			if(i % 8 == 0) {
+				puts("");
+				printf("%04x\t", i+0xf00);
+			}
 
-		if(i == 0x1FF) {
-			puts("");
+			printf("%02X ", s->screen[i]);
+
+			// for(int j = 0; j < 8; j++) {
+			// 	int bit = (s->screen[i] >> (7-j)) & 0x01;
+			// 	if(bit) {
+			// 		printf("_");
+			// 	} else printf("X");
+			// }
 		}
+		break;
+		default:
+		return;
 	}
+	
 	puts("");
 }

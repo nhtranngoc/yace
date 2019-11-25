@@ -1,14 +1,11 @@
-#include "chip8.h"
+#include "main.h"
 
 int main(int argc, char **argv) {
-	// retutns zero on success else non-zero 
-    if (SDL_Init(SDL_INIT_EVERYTHING) != 0) { 
-        printf("error initializing SDL: %s\n", SDL_GetError()); 
-    } 
-    SDL_Window* win = SDL_CreateWindow("GAME", 
-                                       SDL_WINDOWPOS_CENTERED, 
-                                       SDL_WINDOWPOS_CENTERED, 
-                                       32, 64, 0); 
+	int clockFreq = 60; //Hz
+	// Initialize screen
+
+	InitDisplay();
+	Chip8State *s = InitChip8();
 
 	// Load program
 	FILE *f = fopen(argv[1], "rb");
@@ -23,23 +20,22 @@ int main(int argc, char **argv) {
 	int fsize = ftell(f);
 	fseek(f, 0L, SEEK_SET);
 
-	Chip8State *s = InitChip8();
 	fread(s->memory+s->PC, fsize, 1, f);
 	fclose(f); 
 
-	// Init emulator
-	SDL_Event event;
-	while(!STOP) {
-		// Handle Ctr+C
-		SDL_PollEvent(&event);
-		if(event.type == SDL_QUIT) {
-			printf("Termination signal caught, exiting..\n");
-			exit(1);
-		}
+	draw = 0;
 
-		//Emulat cycle, then move program pointer forward.
+	// Init emulator
+	while(1) {
+		PollKeyboard();
+		RenderDisplay(s);
+
+		//Emulate cycle, print debug info
 		EmulateChip8(s);
-		printMem(s, 0);
+		// printMem(s, 2);
+		// 
+		//Emulate clock.
+		SDL_Delay(1000/clockFreq);
 	}
 
 	return 0;
