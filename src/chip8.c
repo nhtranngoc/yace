@@ -32,7 +32,7 @@ void EmulateChip8(Chip8State *s) {
 			switch(nnn) {
 				case 0x00E0:
 				printf("%-10s", "CLS"); 
-				memset(s->screen, 0, 64*32/8);
+				memset(s->screen, 0, (SCREEN_WIDTH * SCREEN_HEIGHT)/8);
 				draw = 1;
 				s->PC += 2;
 				break;
@@ -160,41 +160,23 @@ void EmulateChip8(Chip8State *s) {
 		case 0x0d:
 			printf("%-10s V%01x, V%01x, #$%01x", "DRW", x, y, n); 
 			//Draw
-			s->V[0xf] = 0;
 			puts("");
+
+			s->V[0xf] = 0;
 			for(int i=0;i<n;i++) {
 				uint8_t src_byte = s->memory[s->I + i];
 				// Scanning from msb.
 				for(int j=0;j<8;j++) {
-					uint8_t src_bit = (src_byte >> (7-j)) & 0x1;
 					// Get x, y (2048)
-					int x_bit = s->V[x] + j;
-					int y_bit = s->V[y] + i;
+					int x_byte = (s->V[x] + j)/8;			// X coord of byte
+					int y_byte = (s->V[y] + i);				// Y coord of byte
+					int i_byte = x_byte + y_byte*(SCREEN_WIDTH / 8);	// Index of byte
 
-					// Get index (256)
-					int index_byte = x_bit/8 + y_bit*8;
-					uint8_t des_byte = s->screen[index_byte];
-					uint8_t des_bit = (des_byte >> (7-j)) & 0x1;
-
-					if(src_bit) {
-
-						if(src_bit & des_bit) {
-							s->V[0xf] = 1;
-						}
-						uint8_t xor_bit = src_bit ^ des_bit;
-						s->screen[index_byte] |= xor_bit << (s->V[x]+j)%8;
-						printf("Set bit src: %02x, x: %d, y: %d, i: %d, j: %d, b: %01x, bit: %02x\n", 
-							src_byte, 
-							x_bit, 
-							y_bit, 
-							index_byte, 
-							j,
-							xor_bit,
-							xor_bit << (s->V[x]+j)%8);
-
-					}
+					uint8_t des_byte = s->screen[i_byte];
+					// int x_bit = 
 
 				}
+				printf("+++\n");
 			}
 			printf("==========");
 
@@ -275,6 +257,28 @@ void EmulateChip8(Chip8State *s) {
 	printf("\n");
 	icount++;
 }
+
+// Get current screen pixel, 64x32 coordinate
+bool GetPixelChip8(Chip8State *s, int x, int y) {
+	int byteIndex = x + y*8; // 8 bytes per line
+	int bitIndex = x%8; 	 // 8 bits per byte
+	return GetBitChip8(s->screen[byteIndex], bitIndex);
+}
+
+// Set pixel to screen
+void SetPixelChip8(Chip8State *s, int x, int y, bool val) {
+
+}
+
+// Get the nth bix of a byte
+bool GetBitChip8(uint8_t *bytes, int index) {\
+	return (bytes[index / 8] >> (7 - (index % 8))) & 1;
+}
+
+void SetBitChip8(uint8_t *byte, int index, bool val) {
+	*byte = (*byte & ~(1 << index)) | (val << index);
+}
+
 
 // Print memory nicely.
 void printMem(Chip8State *s, int printFull) {

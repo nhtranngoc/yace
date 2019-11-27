@@ -18,13 +18,13 @@ void InitDisplay(void) {
 	window = SDL_CreateWindow("YACE - Yet another CHIP-8 Emulator",
 		SDL_WINDOWPOS_UNDEFINED,
 		SDL_WINDOWPOS_UNDEFINED,
-		64*scale,
-		32*scale,
+		SCREEN_WIDTH * scale,
+		SCREEN_HEIGHT * scale,
 		SDL_WINDOW_RESIZABLE);
 
 	renderer = SDL_CreateRenderer(window, -1, 0);
-	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_INDEX1MSB, SDL_TEXTUREACCESS_STATIC, 64*scale, 32*scale);
-	screen = SDL_CreateRGBSurface(0, 64*scale, 32*scale, 8, 0,0,0,0);
+	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_INDEX1MSB, SDL_TEXTUREACCESS_STATIC, SCREEN_WIDTH * scale, SCREEN_HEIGHT * scale);
+	screen = SDL_CreateRGBSurface(0, SCREEN_WIDTH * scale, SCREEN_HEIGHT * scale, 8, 0,0,0,0);
 }
 
 void RenderDisplay(Chip8State *s) {
@@ -33,8 +33,8 @@ void RenderDisplay(Chip8State *s) {
 		SDL_Rect rect;
 		rect.x = 0;
 		rect.y = 0;
-		rect.h = 64*scale;
-		rect.w = 32*scale;
+		rect.h = SCREEN_WIDTH * scale;
+		rect.w = SCREEN_HEIGHT * scale;
 
 		for(int i=0;i<256;i++) {
 			int display_byte = s->screen[i];
@@ -64,14 +64,14 @@ void RenderDisplay(Chip8State *s) {
 	draw = 0;
 }
 
-// Set bit at coordinate (x,y) - 64x32
-void setBit(Chip8State *s, int x, int y) {
+// Set bit at coordinate (x,y) - SCREEN_WIDTH x SCREEN_HEIGHT 
+ void setBit(Chip8State *s, int x, int y) {
 	// Get byte pos
 	int _x = x/8;
 	// Get bit pos
 	int _x1 = x%8;
-	// Get index - 8x32
-	int index = _x + y*8;
+	// Get index - 8xSCREEN_HEIGHT 
+ 	int index = _x + y*8;
 
 	s->screen[index] = 1 << _x1;
 
