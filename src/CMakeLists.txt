@@ -16,8 +16,9 @@ add_executable(disassembler disassembler.c)
 
 # make run
 add_custom_target(run 
-	COMMAND chip8 ${ROMS_DIR}/IBM.ch8
-	# COMMAND chip8 ${ROMS_DIR}/Maze.ch8
+	COMMAND chip8 ${ROMS_DIR}/Tank.ch8
+	# COMMAND chip8 ${ROMS_DIR}/Tetris.ch8
+
 	)
 
 add_library(chip8_lib STATIC ${CHIP8_SOURCES})

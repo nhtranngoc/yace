@@ -3,6 +3,25 @@
 char STOP = 0;
 int icount = 0;
 char draw;
+uint8_t font4x5[] = {
+	0xF0, 0x90, 0x90, 0x90, 0xF0, 	// 0
+	0x20, 0x60, 0x20, 0x20, 0x70,	// 1
+	0xF0, 0x10, 0xF0, 0x80, 0xF0,	// 2
+	0xF0, 0x10, 0xF0, 0x10, 0xF0,	// 3
+	0x90, 0x90, 0xF0, 0x10, 0x10,	// 4
+	0xF0, 0x80, 0xF0, 0x10, 0xF0,	// 5
+	0xF0, 0x80, 0xF0, 0x90, 0xF0,	// 6
+	0xF0, 0x10, 0x20, 0x40, 0x40,	// 7
+	0xF0, 0x90, 0xF0, 0x90, 0xF0,	// 8
+	0xF0, 0x90, 0xF0, 0x10, 0xF0,	// 9
+	0xF0, 0x90, 0xF0, 0x90, 0x90, 	// A
+	0xE0, 0x90, 0xE0, 0x90, 0xE0,	// B
+	0xF0, 0x80, 0x80, 0x80, 0xF0,	// C
+	0xE0, 0x90, 0x90, 0x90, 0xE0,	// D
+	0xF0, 0x80, 0xF0, 0x80, 0xF0,	// E
+	0xF0, 0x80, 0xF0, 0x80, 0x80	// F
+};
+
 
 Chip8State *InitChip8(void) {
 	Chip8State *s = calloc(sizeof(Chip8State), 1);
@@ -12,6 +31,9 @@ Chip8State *InitChip8(void) {
 	s->SP = 0xFA0; // Why? The specs didn't mention this.
 	s->PC = 0x200;
 	s->I = 0;
+
+	// Copy font to memory, starting at memory[0]
+	memcpy(&s->memory[0], font4x5, 5*16);
 
 	return s;
 }
@@ -160,36 +182,32 @@ void EmulateChip8(Chip8State *s) {
 		case 0x0d:
 			printf("%-10s V%01x, V%01x, #$%01x", "DRW", x, y, n); 
 			//Draw
-			puts("");
-
 			s->V[0xf] = 0;
 			for(int i=0;i<n;i++) {
-				uint8_t src_byte = s->memory[s->I + i];
-				// Scanning from msb.
 				for(int j=0;j<8;j++) {
-					// Get x, y (2048)
-					int x_byte = (s->V[x] + j)/8;			// X coord of byte
-					int y_byte = (s->V[y] + i);				// Y coord of byte
-					int i_byte = x_byte + y_byte*(SCREEN_WIDTH / 8);	// Index of byte
+					bool src_pixel = GetBitChip8(&s->memory[s->I+i], j);
+					bool des_pixel = GetPixelChip8(s, s->V[x]+j, s->V[y]+i);
 
-					uint8_t des_byte = s->screen[i_byte];
-					// int x_bit = 
+					if(src_pixel && des_pixel) {
+						s->V[0xf] = 1;
+					}
 
+					SetPixelChip8(s, s->V[x]+j, s->V[y]+i, src_pixel ^ des_pixel);
 				}
-				printf("+++\n");
 			}
-			printf("==========");
-
-			puts("");
 			draw = 1;
 			s->PC += 2;
 			break;
 		case 0x0e:
 			switch(opcode[1]) {
 				case 0x9E:
-					printf("%-10s V%01x", "SKP", x); break;
+					printf("%-10s V%01x", "SKP", x); 
+					s->PC += (s->Keys[s->V[x]] != 0) ? 2 : 0;
+					break;
 				case 0xA1:
-					printf("%-10s V%01x", "SKNP", x); break;
+					printf("%-10s V%01x", "SKNP", x); 
+					s->PC += (s->Keys[s->V[x]] == 0) ? 2 : 0;
+					break;
 				default:
 					printf("Invalid instruction E"); break;
 			}
@@ -202,7 +220,9 @@ void EmulateChip8(Chip8State *s) {
 					s->PC += 2;
 					break;
 				case 0x0A:
-					printf("%-10s V%01x, %s", "LD", x, "K"); break;
+					printf("%-10s V%01x, %s", "LD", x, "K"); 
+
+					break;
 				case 0x15:
 					printf("%-10s %s, V%01x", "LD", "DT", x); 
 					s->Delay = s->V[x];
@@ -219,7 +239,10 @@ void EmulateChip8(Chip8State *s) {
 					s->PC += 2;
 					break;
 				case 0x29:
-					printf("%-10s %s, V%01x", "LD", "F", x); break;
+					printf("%-10s %s, V%01x", "LD", "F", x); 
+					s->I = s->V[x] * 5;
+					s->PC += 2;
+					break;
 				case 0x33:
 					printf("%-10s %s, V%01x", "LD", "B", x);
 					uint8_t bcd = s->V[x];
@@ -260,23 +283,26 @@ void EmulateChip8(Chip8State *s) {
 
 // Get current screen pixel, 64x32 coordinate
 bool GetPixelChip8(Chip8State *s, int x, int y) {
-	int byteIndex = x + y*8; // 8 bytes per line
-	int bitIndex = x%8; 	 // 8 bits per byte
-	return GetBitChip8(s->screen[byteIndex], bitIndex);
+	int byteIndex = x/8 + y*8; // 8 bytes per line
+	int bitIndex = x % 8; 	 // 8 bits per byte
+	return GetBitChip8(&s->screen[byteIndex], bitIndex);
 }
 
 // Set pixel to screen
 void SetPixelChip8(Chip8State *s, int x, int y, bool val) {
+	int byteIndex = x/8 + y*8;
+	int bitIndex = x % 8;
 
+	SetBitChip8(&s->screen[byteIndex], bitIndex, val);
 }
 
 // Get the nth bix of a byte
-bool GetBitChip8(uint8_t *bytes, int index) {\
-	return (bytes[index / 8] >> (7 - (index % 8))) & 1;
+bool GetBitChip8(uint8_t *bytes, int index) {
+	return (*bytes >> (7 - index)) & 1;
 }
 
 void SetBitChip8(uint8_t *byte, int index, bool val) {
-	*byte = (*byte & ~(1 << index)) | (val << index);
+	*byte = (*byte & ~(1 << (7 - index))) | (val << (7 - index));
 }
 
 

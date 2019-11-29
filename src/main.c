@@ -1,7 +1,7 @@
 #include "main.h"
 
 int main(int argc, char **argv) {
-	int clockFreq = 60; //Hz
+	int clockFreq = 120; //Hz
 	// Initialize screen
 
 	InitDisplay();
