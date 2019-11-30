@@ -39,7 +39,22 @@ void SetBitChip8(uint8_t *bytes, int index, bool val);
 void Op0(Chip8State *s, uint16_t nnn);
 void Op1(Chip8State *s, uint16_t nnn);
 void Op2(Chip8State *s, uint16_t nnn);
+void Op3(Chip8State *s, uint8_t x, uint8_t nn);
 
+void Op4(Chip8State *s, uint8_t x, uint8_t nn);
+void Op5(Chip8State *s, uint8_t x, uint8_t y);
+void Op6(Chip8State *s, uint8_t x, uint8_t nn);
+void Op7(Chip8State *s, uint8_t x, uint8_t nn);
+
+void Op8(Chip8State *s, uint8_t x, uint8_t y, uint8_t lastnib);
+void Op9(Chip8State *s, uint8_t x, uint8_t y);
+void OpA(Chip8State *s, uint16_t nnn);
+void OpB(Chip8State *s, uint16_t nnn);
+
+void OpC(Chip8State *s, uint8_t x, uint8_t nn);
+void OpD(Chip8State *s, uint8_t x, uint8_t y, uint8_t n);
+void OpE(Chip8State *s, uint8_t opcode, uint8_t x);
+void OpF(Chip8State *s, uint8_t opcode, uint8_t x);
 
 void printMem(Chip8State *s, int printFull);
 
