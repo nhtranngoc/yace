@@ -9,8 +9,22 @@ cmake
 make 
 make run
 ```
-
 The code should run the Tetris ROM in ./roms/
+
+# Tests
+
+```
+cd ./build/
+make tests && ./tests/tests
+```
+
+# To-dos
+
+* [ ] Finish writing tests
+* [ ] Port to ESP-32 
+* [ ] Add sound
+* [ ] Weird graphical glitch
+
 
 ## References
 
