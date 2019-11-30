@@ -1,7 +1,7 @@
 #include "main.h"
 
 int main(int argc, char **argv) {
-	int clockFreq = 120; //Hz
+	int clockFreq = 60; //Hz
 	// Initialize screen
 
 	InitDisplay();
@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
 
 	// Init emulator
 	while(1) {
-		PollKeyboard();
+		PollKeyboard(s);
 		RenderDisplay(s);
 
 		//Emulate cycle, print debug info

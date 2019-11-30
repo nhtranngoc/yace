@@ -21,6 +21,7 @@ typedef struct Chip8State {
 	uint8_t Sound;
 	uint16_t PC;
 	uint16_t SP;
+	bool Wait;
 	uint8_t Keys[16];
 
 	uint8_t *memory;
@@ -34,6 +35,11 @@ bool GetPixelChip8(Chip8State *s, int x, int y);
 void SetPixelChip8(Chip8State *s, int x, int y, bool val);
 bool GetBitChip8(uint8_t *bytes, int index);
 void SetBitChip8(uint8_t *bytes, int index, bool val);
+
+void Op0(Chip8State *s, uint16_t nnn);
+void Op1(Chip8State *s, uint16_t nnn);
+void Op2(Chip8State *s, uint16_t nnn);
+
 
 void printMem(Chip8State *s, int printFull);
 
