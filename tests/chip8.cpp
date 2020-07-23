@@ -8,7 +8,6 @@ extern "C" {
 TEST(initChip8, ok) {
 	Chip8State *s = InitChip8(); 
 
-	EXPECT_EQ(*s->memory, 0);
 	EXPECT_EQ(s->memory[0xf00], *s->screen);
 	EXPECT_EQ(s->SP, 0xFA0);
 	EXPECT_EQ(s->PC, 0x200);

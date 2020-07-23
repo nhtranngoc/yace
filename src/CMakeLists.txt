@@ -16,8 +16,8 @@ add_executable(disassembler disassembler.c)
 
 # make run
 add_custom_target(run 
-	COMMAND chip8 ${ROMS_DIR}/TestRom.ch8
-	# COMMAND chip8 ${ROMS_DIR}/Breakout.ch8
+	# COMMAND chip8 ${ROMS_DIR}/TestRom.ch8
+	COMMAND chip8 ${ROMS_DIR}/Kaleid.ch8
 
 	)
 

@@ -5,7 +5,7 @@ find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 
 # Test targets
-add_executable(tests main.cpp chip8.cpp)
+add_executable(tests main.cpp chip8.cpp opcodes.cpp)
 add_test(NAME tests COMMAND tests)
 
 # Link library from src/chip8 + pthread
